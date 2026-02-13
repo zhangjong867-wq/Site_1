@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умный Калькулятор</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .calc-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border-radius: 24px;
+        }
+
+        .display-screen {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            color: white;
+            text-align: right;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            word-break: break-all;
+        }
+
+        .btn-calc {
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            height: 60px;
+            border-radius: 16px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn-calc:active {
+            transform: scale(0.95);
+        }
+
+        .btn-number {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-number:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-operator {
+            background: rgba(255, 159, 67, 0.2);
+            color: #ff9f43;
+        }
+
+        .btn-operator:hover {
+            background: rgba(255, 159, 67, 0.4);
+        }
+
+        .btn-equal {
+            background: #ff9f43;
+            color: white;
+        }
+
+        .btn-equal:hover {
+            background: #ffb167;
+        }
+
+        .btn-clear {
+            background: rgba(238, 82, 83, 0.2);
+            color: #ee5253;
+        }
+
+        .btn-clear:hover {
+            background: rgba(238, 82, 83, 0.4);
+        }
+
+        .history-panel {
+            max-height: 150px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calc-glass p-6 w-full max-w-[350px] mx-4">
+        <div class="display-screen">
+            <div id="prev-op" class="text-sm opacity-60 h-6"></div>
+            <div id="current-op" class="text-3xl font-bold">0</div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-3">
+            <!-- Row 1 -->
+            <div onclick="clearAll()" class="btn-calc btn-clear col-span-2">C</div>
+            <div onclick="deleteLast()" class="btn-calc btn-operator">←</div>
+            <div onclick="appendOperator('/')" class="btn-calc btn-operator">÷</div>
+
+            <!-- Row 2 -->
+            <div onclick="appendNumber('7')" class="btn-calc btn-number">7</div>
+            <div onclick="appendNumber('8')" class="btn-calc btn-number">8</div>
+            <div onclick="appendNumber('9')" class="btn-calc btn-number">9</div>
+            <div onclick="appendOperator('*')" class="btn-calc btn-operator">×</div>
+
+            <!-- Row 3 -->
+            <div onclick="appendNumber('4')" class="btn-calc btn-number">4</div>
+            <div onclick="appendNumber('5')" class="btn-calc btn-number">5</div>
+            <div onclick="appendNumber('6')" class="btn-calc btn-number">6</div>
+            <div onclick="appendOperator('-')" class="btn-calc btn-operator">-</div>
+
+            <!-- Row 4 -->
+            <div onclick="appendNumber('1')" class="btn-calc btn-number">1</div>
+            <div onclick="appendNumber('2')" class="btn-calc btn-number">2</div>
+            <div onclick="appendNumber('3')" class="btn-calc btn-number">3</div>
+            <div onclick="appendOperator('+')" class="btn-calc btn-operator">+</div>
+
+            <!-- Row 5 -->
+            <div onclick="appendNumber('0')" class="btn-calc btn-number col-span-2">0</div>
+            <div onclick="appendNumber('.')" class="btn-calc btn-number">.</div>
+            <div onclick="calculate()" class="btn-calc btn-equal">=</div>
+        </div>
+
+        <div class="mt-6 border-t border-white/10 pt-4">
+            <h3 class="text-white/60 text-xs uppercase tracking-wider mb-2">История</h3>
+            <div id="history" class="history-panel text-white/40 text-sm space-y-1">
+                <!-- Сюда будут добавляться записи -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentInput = '0';
+        let previousInput = '';
+        let operator = null;
+        let shouldResetScreen = false;
+
+        const currentDisplay = document.getElementById('current-op');
+        const prevDisplay = document.getElementById('prev-op');
+        const historyList = document.getElementById('history');
+
+        function appendNumber(number) {
+            if (currentInput === '0' || shouldResetScreen) {
+                currentInput = number;
+                shouldResetScreen = false;
+            } else {
+                if (number === '.' && currentInput.includes('.')) return;
+                currentInput += number;
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            if (operator !== null) calculate();
+            previousInput = currentInput;
+            operator = op;
+            shouldResetScreen = true;
+            updateDisplay();
+        }
+
+        function clearAll() {
+            currentInput = '0';
+            previousInput = '';
+            operator = null;
+            updateDisplay();
+        }
+
+        function deleteLast() {
+            if (currentInput.length === 1) {
+                currentInput = '0';
+            } else {
+                currentInput = currentInput.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function calculate() {
+            if (operator === null || shouldResetScreen) return;
+            
+            let result;
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(currentInput);
+
+            switch (operator) {
+                case '+': result = prev + current; break;
+                case '-': result = prev - current; break;
+                case '*': result = prev * current; break;
+                case '/': 
+                    if (current === 0) {
+                        showError("Ошибка");
+                        return;
+                    }
+                    result = prev / current; 
+                    break;
+                default: return;
+            }
+
+            addToHistory(`${previousInput} ${operator} ${currentInput} = ${result}`);
+            currentInput = result.toString();
+            operator = null;
+            previousInput = '';
+            shouldResetScreen = true;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            currentDisplay.innerText = currentInput;
+            if (operator) {
+                prevDisplay.innerText = `${previousInput} ${operator}`;
+            } else {
+                prevDisplay.innerText = '';
+            }
+        }
+
+        function addToHistory(entry) {
+            const div = document.createElement('div');
+            div.innerText = entry;
+            historyList.prepend(div);
+            if (historyList.children.length > 5) {
+                historyList.removeChild(historyList.lastChild);
+            }
+        }
+
+        function showError(msg) {
+            currentDisplay.innerText = msg;
+            setTimeout(() => {
+                clearAll();
+            }, 1500);
+        }
+
+        // Поддержка клавиатуры
+        window.addEventListener('keydown', (e) => {
+            if (e.key >= 0 && e.key <= 9) appendNumber(e.key);
+            if (e.key === '.') appendNumber('.');
+            if (e.key === '=' || e.key === 'Enter') calculate();
+            if (e.key === 'Backspace') deleteLast();
+            if (e.key === 'Escape') clearAll();
+            if (['+', '-', '*', '/'].includes(e.key)) appendOperator(e.key);
+        });
+    </script>
+</body>
+</html>
